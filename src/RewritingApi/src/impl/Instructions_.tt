@@ -1,0 +1,496 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>  
+<#@ output extension=".cs" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="/home/anon/.nuget/packages/microsoft.netcore.app/2.1.0/ref/netcoreapp2.1/System.Runtime.dll" #>
+<#@ assembly name="/home/anon/.nuget/packages/mono.cecil/0.10.1/lib/netstandard1.3/Mono.Cecil.dll" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Reflection" #>
+<#@ import namespace="Mono.Cecil" #>
+<#@ import namespace="Mono.Cecil.Cil" #>
+
+<#
+	List<MetalMnemonic> metalMnemonics = new List<MetalMnemonic>
+	{
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "StoreArgument",
+			OperandType = "byte",
+			OperandArgumentName = "argumentIndex",
+			OperandValueName = "Index",
+			DefaultOpCode = nameof(OpCodes.Starg_S),
+			AdditionalOpCodes = new[] { nameof(OpCodes.Starg) }
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "LoadArgument",
+			OperandType = "byte",
+			OperandArgumentName = "argumentIndex",
+			OperandValueName = "Index",
+			DefaultOpCode = nameof(OpCodes.Ldarg_S),
+			OptimizedMnemonicCount = 4,
+			OptimizedMnemonicNamePattern = nameof(OpCodes.Ldarg) + "_{0}",
+			AdditionalOpCodes = new[] { nameof(OpCodes.Ldarg) }
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "LoadArgumentAdress",
+			OperandType = "byte",
+			OperandArgumentName = "argumentIndex",
+			OperandValueName = "Index",
+			DefaultOpCode = nameof(OpCodes.Ldarga_S),
+			AdditionalOpCodes = new[] { nameof(OpCodes.Ldarga) }
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "StoreVariable",
+			OperandType = "byte",
+			OperandArgumentName = "variableIndex",
+			OperandValueName = "Index",
+			DefaultOpCode = nameof(OpCodes.Stloc_S),
+			OptimizedMnemonicCount = 4,
+			OptimizedMnemonicNamePattern = nameof(OpCodes.Stloc) + "_{0}",
+			AdditionalOpCodes = new[] { nameof(OpCodes.Stloc) }
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "LoadVariable",
+			OperandType = "byte",
+			OperandArgumentName = "variableIndex",
+			OperandValueName = "Index",
+			DefaultOpCode = nameof(OpCodes.Ldloc_S),
+			OptimizedMnemonicCount = 4,
+			OptimizedMnemonicNamePattern = nameof(OpCodes.Ldloc) + "_{0}",
+			AdditionalOpCodes = new[] { nameof(OpCodes.Ldloc) }
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "LoadVariableAdress",
+			OperandType = "byte",
+			OperandArgumentName = "variableIndex",
+			OperandValueName = "Index",
+			DefaultOpCode = nameof(OpCodes.Ldloca_S),
+			AdditionalOpCodes = new[] { nameof(OpCodes.Ldloca) }
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "LoadField",
+			DefaultOpCode = nameof(OpCodes.Ldfld),
+			OperandType = typeof(FieldReference).FullName,
+			OperandArgumentName = "field",
+			OperandValueName = "FieldReference"
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "LoadFieldAdress",
+			DefaultOpCode = nameof(OpCodes.Ldflda),
+			OperandType = typeof(FieldReference).FullName,
+			OperandArgumentName = "field",
+			OperandValueName = "FieldReference"
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "StoreField",
+			DefaultOpCode = nameof(OpCodes.Stfld),
+			OperandType = typeof(FieldReference).FullName,
+			OperandArgumentName = "field",
+			OperandValueName = "FieldReference"
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "LoadStaticField",
+			DefaultOpCode = nameof(OpCodes.Ldsfld),
+			OperandType = typeof(FieldReference).FullName,
+			OperandArgumentName = "field",
+			OperandValueName = "FieldReference"
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "LoadStaticFieldAdress",
+			DefaultOpCode = nameof(OpCodes.Ldsflda),
+			OperandType = typeof(FieldReference).FullName,
+			OperandArgumentName = "field",
+			OperandValueName = "FieldReference"
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "StoreStaticField",
+			DefaultOpCode = nameof(OpCodes.Stsfld),
+			OperandType = typeof(FieldReference).FullName,
+			OperandArgumentName = "field",
+			OperandValueName = "FieldReference"
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "LoadString",
+			OperandType = "string",
+			OperandArgumentName = "str",
+			OperandValueName = "Constant",
+			DefaultOpCode = nameof(OpCodes.Ldstr)
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "LoadInteger",
+			OperandType = "int",
+			OperandArgumentName = "int32",
+			OperandValueName = "Constant",
+			DefaultOpCode = nameof(OpCodes.Ldc_I4_S),
+			OptimizedMnemonicCount = 9,
+			OptimizedMnemonicNamePattern = nameof(OpCodes.Ldc_I4) + "_{0}",
+			AdditionalOpCodes = new[] { nameof(OpCodes.Ldc_I4) }
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "LoadLong",
+			OperandType = "long",
+			OperandArgumentName = "int64",
+			OperandValueName = "Constant",
+			DefaultOpCode = nameof(OpCodes.Ldc_I8),
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "LoadFloat",
+			OperandType = "float",
+			OperandArgumentName = "float32",
+			OperandValueName = "Constant",
+			DefaultOpCode = nameof(OpCodes.Ldc_R4),
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "LoadDouble",
+			OperandType = "double",
+			OperandArgumentName = "float64",
+			OperandValueName = "Constant",
+			DefaultOpCode = nameof(OpCodes.Ldc_R8),
+		}, 
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "Call",
+		    DefaultOpCode = nameof(OpCodes.Call),
+			OperandType = typeof(MethodReference).FullName,
+			OperandArgumentName = "method",
+			OperandValueName = "Method"
+		},
+		new MetalMnemonic
+		{
+			ManagedMnemonic = "CallVirtual",
+		    DefaultOpCode = nameof(OpCodes.Callvirt),
+			OperandType = typeof(MethodReference).FullName,
+			OperandArgumentName = "method",
+			OperandValueName = "Method",
+			CustomGetOperatorInstruction = true
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "Nop",
+			DefaultOpCode = nameof(OpCodes.Nop)
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "Return",
+			DefaultOpCode = nameof(OpCodes.Ret)
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "Throw",
+			DefaultOpCode = nameof(OpCodes.Throw)
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "ReThrow",
+			DefaultOpCode = nameof(OpCodes.Rethrow)
+		},
+		new MetalMnemonic
+		{
+		    ManagedMnemonic = "LoadMetadataToken",
+			DefaultOpCode = nameof(OpCodes.Ldtoken),
+			OperandType = typeof(IMemberDefinition).FullName,
+			OperandArgumentName = "member",
+			OperandValueName = "Member",
+			CustomCreateInstructionImplementation = true
+		}
+	}; 
+#>
+namespace CVB.NET.Rewriting.Compiler.Services.Cecil
+{
+	using System;
+	using System.Collections.Generic;
+    using System.Linq;
+    using Mono.Cecil.Cil;
+
+	public static partial class InstructionExtensions
+	{
+
+<#
+foreach (MetalMnemonic metalMnemonic in metalMnemonics)
+{ #>
+
+		public static bool Is<#= metalMnemonic.ManagedMnemonic #>(this Instruction instruction)
+		{
+			return IsOpCode(instruction, <#= string.Join(", ", metalMnemonic.AllOpCodes) #>);
+		}
+
+	<#
+	// No operand -> no getter for the operand
+	if (!string.IsNullOrEmpty(metalMnemonic.OperandType))
+	{ #>
+	
+		public static <#= metalMnemonic.OperandType #> Get<#= metalMnemonic.ManagedMnemonic #>Instruction<#= metalMnemonic.OperandValueName #>(this Instruction <#= metalMnemonic.CamelCasedManagedMnemonic #>Instruction)
+		{
+			OpCode opCode = <#= metalMnemonic.CamelCasedManagedMnemonic #>Instruction.OpCode;
+
+		<#
+		foreach(KeyValuePair<int, string> indexedOpCode in metalMnemonic.IndexedOpCodes)
+		{ #>
+
+			if (opCode == <#= indexedOpCode.Value #>)
+			{
+				return <#= indexedOpCode.Key #>;
+			}
+		<#
+		} #>
+
+			if (opCode == <#= metalMnemonic.DefaultOpCode #>)
+			{
+				return (<#= metalMnemonic.OperandType #>)<#= metalMnemonic.CamelCasedManagedMnemonic #>Instruction.Operand;
+			}
+            
+			throw new InvalidOperationException();
+		}
+
+<#  }
+} #>
+		private static bool IsOpCode(Instruction instruction, params OpCode[] checkFor)
+        {
+            OpCode opCode = instruction.OpCode;
+
+            return checkFor.Contains(opCode);
+        }
+	}
+
+	public static partial class CreateInstruction
+	{
+	
+<#
+foreach (MetalMnemonic metalMnemonic in metalMnemonics)
+{
+    if (metalMnemonic.CustomCreateInstructionImplementation)
+    {
+        continue;
+    }
+
+	if (!string.IsNullOrEmpty(metalMnemonic.OperandType))
+	{ #>
+
+		public static Instruction <#= metalMnemonic.ManagedMnemonic #>(<#= metalMnemonic.OperandType #> <#= metalMnemonic.OperandArgumentName #>)
+	<#
+	}
+	else
+	{ #>
+
+		public static Instruction <#= metalMnemonic.ManagedMnemonic #>()
+	<#    
+	} #>
+
+		{
+
+	<#
+	if (metalMnemonic.IndexedOpCodes.Any())
+	{ #>
+			switch(<#= metalMnemonic.OperandArgumentName #>)
+			{
+			
+		<#
+		foreach (KeyValuePair<int, string> indexedOpCode in metalMnemonic.IndexedOpCodes)
+		{ #>
+
+				case <#= indexedOpCode.Key #>:
+					return Instruction.Create(<#= indexedOpCode.Value #>);
+		<#
+		} #>
+
+			}
+	<#
+	} #>
+
+			return Instruction.Create(<#= metalMnemonic.DefaultOpCode #><#= string.IsNullOrEmpty(metalMnemonic.OperandType) ? string.Empty : ", " + metalMnemonic.OperandArgumentName #>);
+		}
+
+<# } #>
+
+	}
+
+	public static partial class Emit
+	{
+	    private class EmitContext : IDisposable
+		{
+		
+			private Action<Instruction> emit;
+			private Action onDispose;
+
+			public EmitContext(Action<Instruction> emit, Action onDispose)
+			{
+				this.emit = emit;
+				this.onDispose = onDispose;
+			}
+
+			public void Emit(Instruction instruction)
+			{
+				emit(instruction);
+			}
+
+			public void Dispose()
+			{
+				onDispose();
+			}
+		}
+
+		[ThreadStatic]
+		private static Stack<EmitContext> emitContextStack;
+
+		private static EmitContext CurrentEmitContext => emitContextStack.Peek();
+
+		public static IDisposable UseContext(Action<Instruction> emitInstruction)
+		{
+            if (emitContextStack == null)
+            {
+                emitContextStack = new Stack<EmitContext>();
+            }
+
+            var newContext = new EmitContext(emitInstruction, () => emitContextStack.Pop());
+
+			emitContextStack.Push(newContext);
+
+			return newContext;
+		}
+
+		public static IDisposable UseContext(ILProcessor processor)
+		{
+			return UseContext(instruction => processor.Append(instruction));
+		}
+
+		public static void Append(Instruction instruction)
+		{
+			CurrentEmitContext.Emit(instruction);
+		}
+
+<# foreach (MetalMnemonic metalMnemonic in metalMnemonics)
+{ #>
+	<#
+	if (!string.IsNullOrEmpty(metalMnemonic.OperandType))
+	{ #>
+
+		public static void <#= metalMnemonic.ManagedMnemonic #>(<#= metalMnemonic.OperandType #> <#= metalMnemonic.OperandArgumentName #>)
+		{
+			CurrentEmitContext.Emit(CreateInstruction.<#= metalMnemonic.ManagedMnemonic #>(<#= metalMnemonic.OperandArgumentName #>));
+		}
+	<#
+	}
+	else
+	{ #>
+
+		public static void <#= metalMnemonic.ManagedMnemonic #>()
+		{
+			CurrentEmitContext.Emit(CreateInstruction.<#= metalMnemonic.ManagedMnemonic #>());
+		}
+	<#    
+	} #>
+
+<#
+}#>
+
+	}
+}
+
+<#+
+    public class MetalMnemonic
+    {
+        public bool CustomCreateInstructionImplementation { get; set; }
+		public bool CustomGetOperatorInstruction { get; set; }
+		public bool CustomIsInstruction { get; set; }
+
+        private const string OpCodeContainerPrefix = "OpCodes.";
+
+        public string ManagedMnemonic { get; set; }
+
+		public string OperandArgumentName { get; set; }
+
+        public string OperandType { get; set; }
+
+        public string CamelCasedManagedMnemonic
+        {
+            get
+            {
+                char first = ManagedMnemonic[0];
+                return char.ToLowerInvariant(first) + ManagedMnemonic.Substring(1);
+            }
+        }
+
+        public int OptimizedMnemonicCount { get; set; }
+
+        public string OptimizedMnemonicNamePattern { get; set; }
+
+        private string defaultOpCode;
+        
+		public string DefaultOpCode
+        {
+            get { return defaultOpCode; }
+            set { defaultOpCode = MakeOpCodeContainerReference(value); }
+        }
+		
+		private string[] additionalOpCodes = new string[0];
+
+        public string[] AdditionalOpCodes
+        {
+            get { return additionalOpCodes; }
+            set { additionalOpCodes = value.Select(MakeOpCodeContainerReference).ToArray(); }
+        }
+
+        public IDictionary<int, string> indexedOpCodes;
+        
+
+        public IDictionary<int, string> IndexedOpCodes
+        {
+            get
+            {
+                if (indexedOpCodes != null)
+                {
+                    return indexedOpCodes;
+                }
+				
+                Dictionary<int, string> codes = new Dictionary<int, string>();
+
+                for (int i = 0; i < OptimizedMnemonicCount; i++)
+                {
+                    codes.Add(i, MakeOpCodeContainerReference(string.Format(OptimizedMnemonicNamePattern, i)));
+                }
+
+                return indexedOpCodes = codes;
+            }
+        }
+
+        public string[] AllOpCodes
+        {
+            get
+            {
+				List<string> opCodes = new List<string>();
+
+				opCodes.Add(DefaultOpCode);
+				opCodes.AddRange(AdditionalOpCodes);
+				opCodes.AddRange(IndexedOpCodes.Select(opCode => opCode.Value));
+
+                return opCodes.ToArray();
+            }
+        }
+		
+		private string operandValueName = "Operand";
+        
+		public string OperandValueName
+        {
+            get { return operandValueName; }
+            set { operandValueName = value; }
+        }
+
+        private string MakeOpCodeContainerReference(string opCodeName) => OpCodeContainerPrefix + opCodeName;
+    }
+#>

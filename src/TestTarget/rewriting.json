@@ -1,0 +1,6 @@
+{
+  "middlewares" : [
+    { "Type" : "RewritingJobs.AuthorizationProxyGenerator",
+      "Assembly" : "/home/anon/Documents/repos/RewritingNetCore/RewritingJobs/bin/Debug/netcoreapp2.1/RewritingJobs.dll" }
+  ]
+}

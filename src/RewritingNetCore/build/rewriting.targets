@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+        
+    <UsingTask TaskName="RadFrameworkApplyRewritingTask"
+               AssemblyFile="$(SolutionDir)\RewritingNetCore\lib\RewritingNetCore.dll" />
+
+    <Target Name="RadFrameworkApplyRewriting"
+            BeforeTargets="_CheckForCompileOutputs"
+            Condition="Exists('$(MSBuildProjectDirectory)\$(IntermediateOutputPath)\$(TargetFileName)')">
+
+                <PropertyGroup>
+                    <CoreRewritingMiddleware>[
+                        { 'type' : 'RewritingApi.middleware.MetadataSerializationMiddleware, RewritingApi' }
+                    ]</CoreRewritingMiddleware>
+                    <CoreRewritingDependencies>[
+                        { 'type' : 'RewritingApi.IAssemblyQueryProvider, RewritingApi', 'implementation' : 'RewritingApi.impl.AssemblyQueryProvider, RewritingApi' }
+                     ]</CoreRewritingDependencies>
+                </PropertyGroup>
+        
+                <RadFrameworkApplyRewritingTask
+                        MSBuildProjectDirectory="$(MSBuildProjectDirectory)"
+                        MSBuildProjectFile="$(MSBuildProjectFile)"
+                        IntermediateOutputPath="$(MSBuildProjectDirectory)\$(IntermediateOutputPath)"
+                        IntermediateAssemblyName="$(TargetFileName)"
+                        CoreRewritingMiddleware="$(CoreRewritingMiddleware)"
+                        CoreRewritingDependencies="$(CoreRewritingDependencies)"
+                        LibFolder="$(SolutionDir)\RewritingNetCore\lib">
+                    
+                    <Output TaskParameter="GAssemblyPath" PropertyName="GAssemblyPath"/>
+                    
+                </RadFrameworkApplyRewritingTask>
+
+                <ItemGroup>
+                    
+                    <AddModules Include="$(GAssemblyPath)" />
+                    
+                </ItemGroup>
+        
+    </Target>
+    
+</Project>

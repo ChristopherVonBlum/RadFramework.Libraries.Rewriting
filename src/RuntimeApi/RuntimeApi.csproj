@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp2.1</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Reference Include="ZeroFormatter, Version=1.6.4.0, Culture=neutral, PublicKeyToken=null">
+        <HintPath>..\..\..\..\.nuget\packages\zeroformatter\1.6.4\lib\netstandard1.6\ZeroFormatter.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\RewritingApi\RewritingApi.csproj" />
+    </ItemGroup>
+
+</Project>
